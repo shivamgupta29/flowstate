@@ -1,25 +1,24 @@
 import type { ScheduleEvent, Task } from '../types';
-import { seedTasks } from './seedTasks';
 
 const TASKS_STORAGE_KEY = 'flowstate.tasks.v1';
 const EVENTS_STORAGE_KEY = 'flowstate.scheduleEvents.v1';
 
 export function loadTasks(): Task[] {
   if (typeof window === 'undefined') {
-    return seedTasks;
+    return [];
   }
 
   const storedValue = window.localStorage.getItem(TASKS_STORAGE_KEY);
 
   if (!storedValue) {
-    return seedTasks;
+    return [];
   }
 
   try {
     const parsed = JSON.parse(storedValue) as Task[];
-    return Array.isArray(parsed) ? parsed : seedTasks;
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
-    return seedTasks;
+    return [];
   }
 }
 

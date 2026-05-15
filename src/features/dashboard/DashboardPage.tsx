@@ -26,7 +26,8 @@ export function DashboardPage({
   onOpenTask,
   onComplete,
   onDefer,
-  onReset,
+  onClear,
+  onLoadDemo,
   onExport,
   onImport,
   onSearchChange,
@@ -50,7 +51,8 @@ export function DashboardPage({
   onOpenTask: (taskId: string) => void;
   onComplete: (taskId: string) => void;
   onDefer: (taskId: string) => void;
-  onReset: () => void;
+  onClear: () => void;
+  onLoadDemo: () => void;
   onExport: () => void;
   onImport: (rawValue: string) => void;
   onSearchChange: (value: string) => void;
@@ -162,7 +164,8 @@ export function DashboardPage({
             events={scheduleEvents}
             tasks={scheduled.tasks}
             nextFocusTask={scheduled.queues.focus[0]}
-            onReset={onReset}
+            onClear={onClear}
+            onLoadDemo={onLoadDemo}
             onExport={onExport}
             onImport={onImport}
             backupMessage={backupMessage}

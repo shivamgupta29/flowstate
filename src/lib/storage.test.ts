@@ -3,6 +3,7 @@ import type { ScheduleEvent } from '../types';
 import {
   appendScheduleEvents,
   clearTasks,
+  loadTasks,
   loadScheduleEvents,
   saveScheduleEvents,
 } from './storage';
@@ -32,6 +33,10 @@ describe('schedule event storage', () => {
     saveScheduleEvents([firstEvent]);
 
     expect(loadScheduleEvents()).toEqual([firstEvent]);
+  });
+
+  it('loads no tasks on first run', () => {
+    expect(loadTasks()).toEqual([]);
   });
 
   it('does not append duplicate unchanged movement events', () => {

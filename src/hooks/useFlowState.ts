@@ -172,9 +172,15 @@ export function useFlowState() {
     setTasks((currentTasks) => moveTaskToQueue(currentTasks, taskId, queue));
   }
 
-  function resetTasks() {
-    clearTasks();
+  function loadDemoData() {
     setTasks(seedTasks);
+    setScheduleEvents([]);
+    setBackupMessage(undefined);
+  }
+
+  function clearAllData() {
+    clearTasks();
+    setTasks([]);
     setScheduleEvents([]);
     setBackupMessage(undefined);
   }
@@ -231,7 +237,8 @@ export function useFlowState() {
       exportData,
       importData,
       navigate,
-      resetTasks,
+      clearAllData,
+      loadDemoData,
       restoreCompletedTask,
       setFilter,
       setSearch,

@@ -91,7 +91,8 @@ export function App() {
       }
       onComplete={actions.completeTask}
       onDefer={actions.deferTask}
-      onReset={actions.resetTasks}
+      onClear={actions.clearAllData}
+      onLoadDemo={actions.loadDemoData}
       onExport={actions.exportData}
       onImport={actions.importData}
       onSearchChange={actions.setSearch}
