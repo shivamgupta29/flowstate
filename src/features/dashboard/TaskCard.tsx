@@ -41,6 +41,27 @@ export function TaskCard({
         </span>
       </div>
 
+      <div className="mt-3 flex flex-wrap gap-2">
+        <span className="rounded-md bg-active/10 px-2 py-1 text-xs font-semibold text-active">
+          Score {task.schedulerScore ?? 0}
+        </span>
+        {task.snoozedUntil ? (
+          <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
+            Snoozed
+          </span>
+        ) : null}
+        {task.recurrence?.frequency && task.recurrence.frequency !== 'none' ? (
+          <span className="rounded-md bg-backlog/10 px-2 py-1 text-xs font-semibold text-backlog">
+            {task.recurrence.frequency}
+          </span>
+        ) : null}
+        {task.manualQueueOverride ? (
+          <span className="rounded-md bg-focus/10 px-2 py-1 text-xs font-semibold text-focus">
+            Override
+          </span>
+        ) : null}
+      </div>
+
       <div className="mt-3 grid gap-2 text-sm text-slate-600">
         <div className="flex items-center gap-2">
           <Clock3 className="h-4 w-4 text-slate-400" aria-hidden="true" />

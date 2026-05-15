@@ -2,16 +2,23 @@ import { BarChart3, Check, Plus } from 'lucide-react';
 import { BrandMark } from '../../components/BrandMark';
 import { MetricCard } from '../../components/MetricCard';
 import { queueNames } from '../../config/queues';
-import type { ScheduleEvent, ScheduleResult, Task } from '../../types';
+import type { ReminderSummary } from '../../lib/reminders';
+import type { TaskFilter, TaskSort } from '../../lib/taskView';
+import type { QueueName, ScheduleEvent, ScheduleResult, Task } from '../../types';
 import { QueueColumn } from './QueueColumn';
 import { SchedulerPanel } from './SchedulerPanel';
 
 export function DashboardPage({
   scheduled,
   scheduleEvents,
+  visibleQueues,
   openTasks,
   completedCount,
   totalEffort,
+  reminders,
+  search,
+  filter,
+  sort,
   backupMessage,
   onCreateTask,
   onCompleted,
@@ -22,12 +29,20 @@ export function DashboardPage({
   onReset,
   onExport,
   onImport,
+  onSearchChange,
+  onFilterChange,
+  onSortChange,
 }: {
   scheduled: ScheduleResult;
   scheduleEvents: ScheduleEvent[];
+  visibleQueues: Record<QueueName, Task[]>;
   openTasks: Task[];
   completedCount: number;
   totalEffort: number;
+  reminders: ReminderSummary;
+  search: string;
+  filter: TaskFilter;
+  sort: TaskSort;
   backupMessage?: string;
   onCreateTask: () => void;
   onCompleted: () => void;
@@ -38,6 +53,9 @@ export function DashboardPage({
   onReset: () => void;
   onExport: () => void;
   onImport: (rawValue: string) => void;
+  onSearchChange: (value: string) => void;
+  onFilterChange: (value: TaskFilter) => void;
+  onSortChange: (value: TaskSort) => void;
 }) {
   return (
     <main className="min-h-screen bg-paper text-ink">
@@ -72,6 +90,12 @@ export function DashboardPage({
           />
         </section>
 
+        <section className="grid gap-3 md:grid-cols-3">
+          <ReminderCard label="Overdue" count={reminders.overdue.length} tone="red" />
+          <ReminderCard label="Due today" count={reminders.dueToday.length} tone="focus" />
+          <ReminderCard label="Upcoming" count={reminders.upcoming.length} tone="active" />
+        </section>
+
         <section className="flex flex-wrap gap-3">
           <button
             type="button"
@@ -91,13 +115,42 @@ export function DashboardPage({
           </button>
         </section>
 
+        <section className="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm lg:grid-cols-[1fr_180px_180px]">
+          <input
+            value={search}
+            onChange={(event) => onSearchChange(event.target.value)}
+            className="h-10 rounded-md border border-slate-300 px-3 text-sm outline-none transition focus:border-active focus:ring-2 focus:ring-active/20"
+            placeholder="Search tasks"
+          />
+          <select
+            value={filter}
+            onChange={(event) => onFilterChange(event.target.value as TaskFilter)}
+            className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-active focus:ring-2 focus:ring-active/20"
+          >
+            <option value="all">All open</option>
+            <option value="due-today">Due today</option>
+            <option value="overdue">Overdue</option>
+            <option value="snoozed">Snoozed</option>
+          </select>
+          <select
+            value={sort}
+            onChange={(event) => onSortChange(event.target.value as TaskSort)}
+            className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-active focus:ring-2 focus:ring-active/20"
+          >
+            <option value="scheduler">Scheduler score</option>
+            <option value="deadline">Deadline</option>
+            <option value="urgency">Urgency</option>
+            <option value="effort">Effort</option>
+          </select>
+        </section>
+
         <section className="grid gap-5 xl:grid-cols-[1fr_340px]">
           <section className="grid min-w-0 gap-4 lg:grid-cols-3">
             {queueNames.map((queueName) => (
               <QueueColumn
                 key={queueName}
                 queueName={queueName}
-                tasks={scheduled.queues[queueName]}
+                tasks={visibleQueues[queueName]}
                 onComplete={onComplete}
                 onDefer={onDefer}
                 onOpenTask={onOpenTask}
@@ -117,5 +170,29 @@ export function DashboardPage({
         </section>
       </section>
     </main>
+  );
+}
+
+function ReminderCard({
+  label,
+  count,
+  tone,
+}: {
+  label: string;
+  count: number;
+  tone: 'red' | 'focus' | 'active';
+}) {
+  const toneClass =
+    tone === 'red'
+      ? 'border-red-200 bg-red-50 text-red-700'
+      : tone === 'focus'
+        ? 'border-focus/20 bg-focus/10 text-focus'
+        : 'border-active/20 bg-active/10 text-active';
+
+  return (
+    <div className={`rounded-lg border p-4 ${toneClass}`}>
+      <p className="text-sm font-semibold">{label}</p>
+      <p className="mt-2 text-2xl font-semibold">{count}</p>
+    </div>
   );
 }

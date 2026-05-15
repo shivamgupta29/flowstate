@@ -8,7 +8,13 @@ import {
   validateTaskValues,
   type TaskValidationErrors,
 } from '../../lib/taskValidation';
-import type { ScheduleEvent, Task, Urgency } from '../../types';
+import type {
+  QueueName,
+  RecurrenceFrequency,
+  ScheduleEvent,
+  Task,
+  Urgency,
+} from '../../types';
 import { toDateTimeInputValue } from '../../utils/date';
 import { MovementEventItem } from '../dashboard/MovementEventItem';
 
@@ -20,6 +26,8 @@ export function TaskDetailPage({
   onComplete,
   onRestore,
   onDelete,
+  onMove,
+  onSnooze,
 }: {
   task: Task;
   events: ScheduleEvent[];
@@ -28,12 +36,22 @@ export function TaskDetailPage({
   onComplete: () => void;
   onRestore: () => void;
   onDelete: () => void;
+  onMove: (queue: QueueName) => void;
+  onSnooze: (snoozedUntil: string) => void;
 }) {
   const [form, setForm] = useState(() => ({
     title: task.title,
     deadline: toDateTimeInputValue(task.deadline),
     urgency: task.urgency,
     estimatedEffortMinutes: task.estimatedEffortMinutes,
+    snoozedUntil: task.snoozedUntil
+      ? toDateTimeInputValue(task.snoozedUntil)
+      : '',
+    recurrence: task.recurrence ?? {
+      frequency: 'none' as const,
+      interval: 1,
+    },
+    manualQueueOverride: task.manualQueueOverride,
   }));
   const [errors, setErrors] = useState<TaskValidationErrors>({});
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
@@ -168,6 +186,79 @@ export function TaskDetailPage({
               </div>
             </div>
 
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div>
+                <label
+                  className="block text-sm font-medium text-slate-700"
+                  htmlFor="edit-recurrence"
+                >
+                  Repeat
+                </label>
+                <select
+                  id="edit-recurrence"
+                  value={form.recurrence?.frequency ?? 'none'}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      recurrence: {
+                        frequency: event.target.value as RecurrenceFrequency,
+                        interval: form.recurrence?.interval ?? 1,
+                      },
+                    })
+                  }
+                  className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-active focus:ring-2 focus:ring-active/20"
+                >
+                  <option value="none">No repeat</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                </select>
+              </div>
+              <div>
+                <label
+                  className="block text-sm font-medium text-slate-700"
+                  htmlFor="edit-override"
+                >
+                  Queue override
+                </label>
+                <select
+                  id="edit-override"
+                  value={form.manualQueueOverride ?? ''}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      manualQueueOverride:
+                        event.target.value === ''
+                          ? undefined
+                          : (event.target.value as QueueName),
+                    })
+                  }
+                  className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-active focus:ring-2 focus:ring-active/20"
+                >
+                  <option value="">Automatic</option>
+                  <option value="focus">Focus</option>
+                  <option value="active">Active</option>
+                  <option value="backlog">Backlog</option>
+                </select>
+              </div>
+            </div>
+
+            <label
+              className="mt-4 block text-sm font-medium text-slate-700"
+              htmlFor="edit-snooze"
+            >
+              Snooze until
+            </label>
+            <input
+              id="edit-snooze"
+              type="datetime-local"
+              value={form.snoozedUntil ?? ''}
+              onChange={(event) =>
+                setForm({ ...form, snoozedUntil: event.target.value })
+              }
+              className="mt-2 h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none transition focus:border-active focus:ring-2 focus:ring-active/20"
+            />
+            <ValidationMessage message={errors.snoozedUntil} />
+
             <div className="mt-5 flex flex-col gap-3 sm:flex-row">
               <button
                 type="submit"
@@ -193,7 +284,47 @@ export function TaskDetailPage({
               <p>Current queue: {formatQueueName(task.queue)}</p>
               <p>Status: {task.status}</p>
               <p>Ignored: {task.ignoredCount}x</p>
+              <p>Score: {task.schedulerScore ?? 0}</p>
+              <p>
+                Repeat:{' '}
+                {task.recurrence?.frequency && task.recurrence.frequency !== 'none'
+                  ? task.recurrence.frequency
+                  : 'none'}
+              </p>
+              <p>
+                Snoozed:{' '}
+                {task.snoozedUntil
+                  ? new Date(task.snoozedUntil).toLocaleString()
+                  : 'no'}
+              </p>
               <p>Why here: {task.movementReason}</p>
+            </div>
+
+            <div className="mt-5 border-t border-slate-200 pt-4">
+              <h3 className="text-sm font-semibold text-ink">Manual move</h3>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {(['focus', 'active', 'backlog'] as QueueName[]).map((queue) => (
+                  <button
+                    key={queue}
+                    type="button"
+                    onClick={() => onMove(queue)}
+                    className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-2 text-xs font-semibold capitalize text-slate-700 transition hover:bg-slate-50"
+                  >
+                    {queue}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const tomorrow = new Date();
+                  tomorrow.setDate(tomorrow.getDate() + 1);
+                  onSnooze(tomorrow.toISOString());
+                }}
+                className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Snooze 1 day
+              </button>
             </div>
 
             <div className="mt-5 border-t border-slate-200 pt-4">

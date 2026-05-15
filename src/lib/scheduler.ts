@@ -11,9 +11,9 @@ const HOURS = 60 * 60 * 1000;
 const DAYS = 24 * HOURS;
 
 const urgencyWeight: Record<Task['urgency'], number> = {
-  low: 0,
-  medium: 1,
-  high: 2,
+  low: 5,
+  medium: 15,
+  high: 30,
 };
 
 const queueRank: Record<QueueName, number> = {
@@ -31,11 +31,13 @@ export function scheduleTasks(tasks: Task[], now = new Date()): ScheduleResult {
       return task;
     }
 
-    const { queue, reason } = calculateQueue(task, now);
+    const score = calculateSchedulerScore(task, now);
+    const { queue, reason } = calculateQueue(task, now, score);
     const scheduledTask: Task = {
       ...task,
       queue,
       movementReason: reason,
+      schedulerScore: score,
     };
 
     if (queue !== task.queue) {
@@ -65,7 +67,7 @@ export function scheduleTasks(tasks: Task[], now = new Date()): ScheduleResult {
   };
 }
 
-function calculateQueue(task: Task, now: Date): {
+function calculateQueue(task: Task, now: Date, score: number): {
   queue: QueueName;
   reason: MovementReason;
 } {
@@ -73,6 +75,23 @@ function calculateQueue(task: Task, now: Date): {
   const hoursUntilDeadline = (deadline.getTime() - now.getTime()) / HOURS;
   const daysSinceInteraction =
     (now.getTime() - new Date(task.lastInteractionAt).getTime()) / DAYS;
+
+  if (
+    task.snoozedUntil &&
+    new Date(task.snoozedUntil).getTime() > now.getTime()
+  ) {
+    return {
+      queue: 'backlog',
+      reason: 'Snoozed',
+    };
+  }
+
+  if (task.manualQueueOverride) {
+    return {
+      queue: task.manualQueueOverride,
+      reason: 'Manual override',
+    };
+  }
 
   if (task.ignoredCount >= 3 && hoursUntilDeadline > 24) {
     return {
@@ -90,7 +109,8 @@ function calculateQueue(task: Task, now: Date): {
 
   if (
     hoursUntilDeadline <= 24 ||
-    (hoursUntilDeadline <= 72 && task.urgency === 'high')
+    (hoursUntilDeadline <= 72 && task.urgency === 'high') ||
+    score >= 80
   ) {
     return {
       queue: 'focus',
@@ -98,10 +118,10 @@ function calculateQueue(task: Task, now: Date): {
     };
   }
 
-  if (task.urgency === 'high' || hoursUntilDeadline <= 120) {
+  if (task.urgency === 'high' || hoursUntilDeadline <= 120 || score >= 45) {
     return {
       queue: task.queue === 'focus' ? 'focus' : 'active',
-      reason: task.queue === 'active' ? 'Stable priority' : 'Deadline promotion',
+      reason: task.queue === 'active' ? 'Scheduler score' : 'Scheduler score',
     };
   }
 
@@ -109,6 +129,48 @@ function calculateQueue(task: Task, now: Date): {
     queue: task.queue,
     reason: 'Stable priority',
   };
+}
+
+export function calculateSchedulerScore(task: Task, now = new Date()): number {
+  const deadline = new Date(task.deadline);
+  const hoursUntilDeadline = (deadline.getTime() - now.getTime()) / HOURS;
+  const daysSinceCreated =
+    (now.getTime() - new Date(task.createdAt).getTime()) / DAYS;
+  const daysSinceInteraction =
+    (now.getTime() - new Date(task.lastInteractionAt).getTime()) / DAYS;
+
+  if (
+    task.snoozedUntil &&
+    new Date(task.snoozedUntil).getTime() > now.getTime()
+  ) {
+    return 0;
+  }
+
+  const deadlineScore =
+    hoursUntilDeadline <= 0
+      ? 45
+      : hoursUntilDeadline <= 24
+        ? 40
+        : hoursUntilDeadline <= 72
+          ? 28
+          : hoursUntilDeadline <= 120
+            ? 18
+            : 6;
+  const ignoredScore = Math.min(task.ignoredCount * 8, 24);
+  const agingScore = Math.min(daysSinceInteraction * 4 + daysSinceCreated, 24);
+  const recurrenceScore =
+    task.recurrence && task.recurrence.frequency !== 'none' ? 6 : 0;
+
+  return Math.round(
+    Math.min(
+      100,
+      urgencyWeight[task.urgency] +
+        deadlineScore +
+        ignoredScore +
+        agingScore +
+        recurrenceScore,
+    ),
+  );
 }
 
 function demote(queue: QueueName): QueueName {

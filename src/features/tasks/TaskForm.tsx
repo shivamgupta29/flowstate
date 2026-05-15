@@ -6,7 +6,7 @@ import {
   validateTaskValues,
   type TaskValidationErrors,
 } from '../../lib/taskValidation';
-import type { Urgency } from '../../types';
+import type { QueueName, RecurrenceFrequency, Urgency } from '../../types';
 import { ValidationMessage } from '../../components/ValidationMessage';
 
 export function TaskForm({
@@ -115,6 +115,79 @@ export function TaskForm({
           <ValidationMessage message={errors.estimatedEffortMinutes} />
         </div>
       </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <div>
+          <label
+            className="block text-sm font-medium text-slate-700"
+            htmlFor="recurrence"
+          >
+            Repeat
+          </label>
+          <select
+            id="recurrence"
+            value={form.recurrence?.frequency ?? 'none'}
+            onChange={(event) =>
+              setForm({
+                ...form,
+                recurrence: {
+                  frequency: event.target.value as RecurrenceFrequency,
+                  interval: form.recurrence?.interval ?? 1,
+                },
+              })
+            }
+            className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-active focus:ring-2 focus:ring-active/20"
+          >
+            <option value="none">No repeat</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+          </select>
+        </div>
+        <div>
+          <label
+            className="block text-sm font-medium text-slate-700"
+            htmlFor="override"
+          >
+            Queue override
+          </label>
+          <select
+            id="override"
+            value={form.manualQueueOverride ?? ''}
+            onChange={(event) =>
+              setForm({
+                ...form,
+                manualQueueOverride:
+                  event.target.value === ''
+                    ? undefined
+                    : (event.target.value as QueueName),
+              })
+            }
+            className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-active focus:ring-2 focus:ring-active/20"
+          >
+            <option value="">Automatic</option>
+            <option value="focus">Focus</option>
+            <option value="active">Active</option>
+            <option value="backlog">Backlog</option>
+          </select>
+        </div>
+      </div>
+
+      <label
+        className="mt-4 block text-sm font-medium text-slate-700"
+        htmlFor="snooze"
+      >
+        Snooze until
+      </label>
+      <input
+        id="snooze"
+        type="datetime-local"
+        value={form.snoozedUntil ?? ''}
+        onChange={(event) =>
+          setForm({ ...form, snoozedUntil: event.target.value })
+        }
+        className="mt-2 h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none transition focus:border-active focus:ring-2 focus:ring-active/20"
+      />
+      <ValidationMessage message={errors.snoozedUntil} />
 
       <button
         type="submit"

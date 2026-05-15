@@ -22,7 +22,7 @@ export function AnalyticsPage({
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
         <PageHeader title="Analytics" onBack={onBack} />
 
-        <section className="grid gap-4 md:grid-cols-5">
+        <section className="grid gap-4 md:grid-cols-4 xl:grid-cols-8">
           <MetricCard label="Open" value={analytics.openCount.toString()} />
           <MetricCard
             label="Completed"
@@ -41,6 +41,18 @@ export function AnalyticsPage({
           <MetricCard
             label="Movements"
             value={analytics.movementCount.toString()}
+          />
+          <MetricCard
+            label="Overdue"
+            value={analytics.overdueCount.toString()}
+          />
+          <MetricCard
+            label="Aging rescues"
+            value={analytics.rescuedByAgingCount.toString()}
+          />
+          <MetricCard
+            label="Missed"
+            value={analytics.missedDeadlineCount.toString()}
           />
         </section>
 

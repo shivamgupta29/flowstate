@@ -22,6 +22,9 @@ const movementReasons: MovementReason[] = [
   'Deadline promotion',
   'Ignored-task demotion',
   'Aging boost',
+  'Manual override',
+  'Snoozed',
+  'Scheduler score',
   'Stable priority',
 ];
 

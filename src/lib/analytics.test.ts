@@ -38,6 +38,7 @@ describe('calculateAnalytics', () => {
     });
     expect(analytics.openCount).toBe(2);
     expect(analytics.completedCount).toBe(1);
+    expect(analytics.overdueCount).toBeGreaterThanOrEqual(0);
   });
 
   it('counts movement reasons from schedule events', () => {

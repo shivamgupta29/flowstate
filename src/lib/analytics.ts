@@ -6,6 +6,9 @@ export interface AnalyticsSummary {
   queuedEffortMinutes: number;
   deferralCount: number;
   movementCount: number;
+  overdueCount: number;
+  rescuedByAgingCount: number;
+  missedDeadlineCount: number;
   queueDistribution: Record<QueueName, number>;
   movementReasonTotals: Record<MovementReason, number>;
 }
@@ -14,6 +17,9 @@ const movementReasons: MovementReason[] = [
   'Deadline promotion',
   'Ignored-task demotion',
   'Aging boost',
+  'Manual override',
+  'Snoozed',
+  'Scheduler score',
   'Stable priority',
 ];
 
@@ -32,6 +38,17 @@ export function calculateAnalytics(
     ),
     deferralCount: tasks.reduce((total, task) => total + task.ignoredCount, 0),
     movementCount: events.length,
+    overdueCount: openTasks.filter(
+      (task) => new Date(task.deadline).getTime() < Date.now(),
+    ).length,
+    rescuedByAgingCount: events.filter((event) => event.reason === 'Aging boost')
+      .length,
+    missedDeadlineCount: tasks.filter(
+      (task) =>
+        task.status === 'completed' &&
+        task.completedAt &&
+        new Date(task.completedAt).getTime() > new Date(task.deadline).getTime(),
+    ).length,
     queueDistribution: {
       focus: openTasks.filter((task) => task.queue === 'focus').length,
       active: openTasks.filter((task) => task.queue === 'active').length,

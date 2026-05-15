@@ -1,7 +1,7 @@
 import type { TaskEditValues } from './taskActions';
 
 export type TaskValidationErrors = Partial<
-  Record<'title' | 'deadline' | 'estimatedEffortMinutes', string>
+  Record<'title' | 'deadline' | 'estimatedEffortMinutes' | 'snoozedUntil', string>
 >;
 
 export interface TaskValidationResult {
@@ -36,6 +36,16 @@ export function validateTaskValues(
     values.estimatedEffortMinutes < 15
   ) {
     errors.estimatedEffortMinutes = 'Effort must be at least 15 minutes.';
+  }
+
+  if (values.snoozedUntil) {
+    const snoozedUntil = new Date(values.snoozedUntil);
+
+    if (Number.isNaN(snoozedUntil.getTime())) {
+      errors.snoozedUntil = 'Snooze date is not valid.';
+    } else if (snoozedUntil.getTime() <= now.getTime()) {
+      errors.snoozedUntil = 'Snooze date must be in the future.';
+    }
   }
 
   return {

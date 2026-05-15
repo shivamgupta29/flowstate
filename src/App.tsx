@@ -62,6 +62,10 @@ export function App() {
         onComplete={() => actions.completeTask(task.id)}
         onRestore={() => actions.restoreCompletedTask(task.id)}
         onDelete={() => actions.deleteTask(task.id)}
+        onMove={(queue) => actions.moveTask(task.id, queue)}
+        onSnooze={(snoozedUntil) =>
+          actions.snoozeTaskUntil(task.id, snoozedUntil)
+        }
       />
     );
   }
@@ -70,9 +74,14 @@ export function App() {
     <DashboardPage
       scheduled={flow.scheduled}
       scheduleEvents={flow.scheduleEvents}
+      visibleQueues={flow.visibleQueues}
       openTasks={flow.openTasks}
       completedCount={flow.completedCount}
       totalEffort={flow.totalEffort}
+      reminders={flow.reminders}
+      search={flow.search}
+      filter={flow.filter}
+      sort={flow.sort}
       backupMessage={flow.backupMessage}
       onCreateTask={() => actions.navigate('/tasks/new')}
       onCompleted={() => actions.navigate('/completed')}
@@ -85,6 +94,9 @@ export function App() {
       onReset={actions.resetTasks}
       onExport={actions.exportData}
       onImport={actions.importData}
+      onSearchChange={actions.setSearch}
+      onFilterChange={actions.setFilter}
+      onSortChange={actions.setSort}
     />
   );
 }

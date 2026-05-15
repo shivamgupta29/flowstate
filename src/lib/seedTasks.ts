@@ -9,7 +9,7 @@ function daysFromNow(days: number): string {
 function daysAgo(days: number): string {
   return new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
 }
-
+// A set of example tasks to populate the app on first load, demonstrating various states and movement reasons.
 export const seedTasks: Task[] = [
   {
     id: 'task-architecture-notes',

@@ -5,4 +5,10 @@ export const defaultTaskForm: TaskEditValues = {
   deadline: '',
   urgency: 'medium',
   estimatedEffortMinutes: 45,
+  snoozedUntil: '',
+  recurrence: {
+    frequency: 'none',
+    interval: 1,
+  },
+  manualQueueOverride: undefined,
 };

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { calculateAnalytics } from '../lib/analytics';
 import { createBackupPayload, parseBackupPayload } from '../lib/backup';
+import { getReminderSummary } from '../lib/reminders';
 import { scheduleTasks } from '../lib/scheduler';
 import { seedTasks } from '../lib/seedTasks';
 import {
@@ -12,12 +13,21 @@ import {
   saveTasks,
 } from '../lib/storage';
 import {
+  completeTaskWithRecurrence,
   deleteTaskAndEvents,
+  moveTaskToQueue,
   restoreTask,
+  snoozeTask,
   updateTaskDetails,
   type TaskEditValues,
 } from '../lib/taskActions';
-import type { ScheduleEvent, Task } from '../types';
+import {
+  getVisibleTasks,
+  groupTasksByQueue,
+  type TaskFilter,
+  type TaskSort,
+} from '../lib/taskView';
+import type { QueueName, ScheduleEvent, Task } from '../types';
 
 export function useFlowState() {
   const [tasks, setTasks] = useState<Task[]>(() => loadTasks());
@@ -26,6 +36,9 @@ export function useFlowState() {
   );
   const [path, setPath] = useState(() => window.location.pathname);
   const [backupMessage, setBackupMessage] = useState<string | undefined>();
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<TaskFilter>('all');
+  const [sort, setSort] = useState<TaskSort>('scheduler');
 
   const scheduled = useMemo(() => scheduleTasks(tasks), [tasks]);
   const openTasks = scheduled.tasks.filter((task) => task.status === 'open');
@@ -40,6 +53,23 @@ export function useFlowState() {
   const analytics = useMemo(
     () => calculateAnalytics(scheduled.tasks, scheduleEvents),
     [scheduled.tasks, scheduleEvents],
+  );
+  const visibleOpenTasks = useMemo(
+    () =>
+      getVisibleTasks(openTasks, {
+        search,
+        filter,
+        sort,
+      }),
+    [filter, openTasks, search, sort],
+  );
+  const visibleQueues = useMemo(
+    () => groupTasksByQueue(visibleOpenTasks),
+    [visibleOpenTasks],
+  );
+  const reminders = useMemo(
+    () => getReminderSummary(scheduled.tasks),
+    [scheduled.tasks],
   );
 
   useEffect(() => {
@@ -103,21 +133,15 @@ export function useFlowState() {
   }
 
   function completeTask(taskId: string) {
-    updateTask(taskId, (task) => ({
-      ...task,
-      status: 'completed',
-      updatedAt: new Date().toISOString(),
-      lastInteractionAt: new Date().toISOString(),
-    }));
+    setTasks((currentTasks) => completeTaskWithRecurrence(currentTasks, taskId));
   }
 
   function deferTask(taskId: string) {
-    updateTask(taskId, (task) => ({
-      ...task,
-      ignoredCount: task.ignoredCount + 1,
-      updatedAt: new Date().toISOString(),
-      lastInteractionAt: new Date().toISOString(),
-    }));
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setTasks((currentTasks) =>
+      snoozeTask(currentTasks, taskId, tomorrow.toISOString()),
+    );
   }
 
   function editTask(taskId: string, values: TaskEditValues) {
@@ -136,6 +160,16 @@ export function useFlowState() {
 
   function restoreCompletedTask(taskId: string) {
     setTasks((currentTasks) => restoreTask(currentTasks, taskId));
+  }
+
+  function snoozeTaskUntil(taskId: string, snoozedUntil: string) {
+    setTasks((currentTasks) =>
+      snoozeTask(currentTasks, taskId, snoozedUntil),
+    );
+  }
+
+  function moveTask(taskId: string, queue: QueueName) {
+    setTasks((currentTasks) => moveTaskToQueue(currentTasks, taskId, queue));
   }
 
   function resetTasks() {
@@ -178,11 +212,16 @@ export function useFlowState() {
     backupMessage,
     completedCount,
     completedTasks,
+    filter,
     openTasks,
     path,
+    reminders,
     scheduleEvents,
+    search,
     scheduled,
+    sort,
     totalEffort,
+    visibleQueues,
     actions: {
       completeTask,
       createTask,
@@ -194,6 +233,11 @@ export function useFlowState() {
       navigate,
       resetTasks,
       restoreCompletedTask,
+      setFilter,
+      setSearch,
+      setSort,
+      snoozeTaskUntil,
+      moveTask,
     },
   };
 }

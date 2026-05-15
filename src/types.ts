@@ -4,11 +4,21 @@ export type TaskStatus = 'open' | 'completed';
 
 export type Urgency = 'low' | 'medium' | 'high';
 
+export type RecurrenceFrequency = 'none' | 'daily' | 'weekly';
+
 export type MovementReason =
   | 'Deadline promotion'
   | 'Ignored-task demotion'
   | 'Aging boost'
+  | 'Manual override'
+  | 'Snoozed'
+  | 'Scheduler score'
   | 'Stable priority';
+
+export interface TaskRecurrence {
+  frequency: RecurrenceFrequency;
+  interval: number;
+}
 
 export interface Task {
   id: string;
@@ -23,6 +33,11 @@ export interface Task {
   ignoredCount: number;
   lastInteractionAt: string;
   movementReason: MovementReason;
+  snoozedUntil?: string;
+  recurrence?: TaskRecurrence;
+  manualQueueOverride?: QueueName;
+  completedAt?: string;
+  schedulerScore?: number;
 }
 
 export interface ScheduleEvent {
